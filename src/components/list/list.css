@@ -1,0 +1,21 @@
+
+.sidebar {
+    width: 250px; 
+    background-color: solid;
+    height: 100vh;
+    padding: 16px;
+    color: #000;
+    position: fixed;
+    left: 0;
+    top: 0;
+  }
+  
+  .sidebar .MuiTextField-root {
+    margin-bottom: 16px;
+  }
+  
+  .sidebar .MuiList-root {
+    padding: 0;
+    margin-top: 8px;
+  }
+  
