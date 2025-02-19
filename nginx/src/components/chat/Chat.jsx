@@ -2,7 +2,7 @@ import { styled } from '@mui/material/styles';
 import Badge from '@mui/material/Badge';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
+import { Typography } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import "./chat.css";
 
