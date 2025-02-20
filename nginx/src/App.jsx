@@ -4,7 +4,7 @@ import Chat from "./components/chat/Chat.jsx";
 import List from "./components/list/List.jsx";
 import Message from "./components/chat/Message.jsx";
 import './index.css';
-import Login from "./components/sign-in/Login.jsx"
+import Auth from "./components/Auth/Auth.jsx"
 
 const App = () => {
   const user = true;
@@ -20,7 +20,7 @@ const App = () => {
       </StyledEngineProvider>
       </>
       ) : (
-        <Login />
+        <Auth />
       )}
     </div>
   );

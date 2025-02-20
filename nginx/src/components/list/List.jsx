@@ -96,7 +96,7 @@ const ChatList = () => {
         <MuiList sx={{ width: '100%', maxWidth: 360, bgcolor: 'solid' }}>
           {filteredChats.map((chat) => (
             <React.Fragment key={chat.id}>
-              <ListItem alignItems="flex-start" button>
+              <ListItem alignItems="flex-start">
                 <ListItemAvatar>
                   <Avatar>
                     <ChatIcon />

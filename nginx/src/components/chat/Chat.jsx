@@ -29,7 +29,6 @@ export default function Header() {
           >
             <Avatar
               alt="Yan Zimnitski"
-              src="/static/images/avatar/1.jpg"
               sx={{ width: 50, height: 50 }}
             />
           </StyledBadge>
