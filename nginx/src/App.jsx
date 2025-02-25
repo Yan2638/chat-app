@@ -14,19 +14,10 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = async () => {
-    try {
       const response = await axios.get("http://localhost:3000/auth-check", {
         withCredentials: true,
       });
-
-      if (response.status === 200) {
-        setUser({});
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null); 
-    }
+      setUser(response.status === 200 ? {} : null);
   };
 
   useEffect(() => {
