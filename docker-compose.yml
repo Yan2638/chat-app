@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:latest
+  nginx:
+    build:
+      context: ./nginx
+    volumes:
+      - /nginx/node_modules
+      - ./client:/app
+    ports:
+      - '3000:3000'
+    container_name: my-app
+  auth-service:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - '3001:3001'
+    restart: on-failure
+    container_name: auth-service
+    volumes:
+      - /app/node_modules # Inside the container, don't try to override this folder, just leave as is
+      - ./auth-service:/app # Look at the server directory and copy everything into the app folder in the container
+    environment:
+      - PGUSER=postgres
+      - PGHOST=postgres
+      - PGDATABASE=postgres
+      - PGPASSWORD=2638
+      - PGPORT=5432

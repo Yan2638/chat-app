@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  root: './', // Укажите правильный путь, если он не по умолчанию
-  publicDir: 'nginx/public', // Убедитесь, что publicDir указывает на правильную папку
+  root: './',
+  publicDir: 'nginx/public', 
   esbuild: {
     jsxInject: `import React from 'react'`,
   },
