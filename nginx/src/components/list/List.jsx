@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, InputAdornment } from '@mui/material';
+import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, InputAdornment, Box } from '@mui/material';
 import { Chat as ChatIcon } from '@mui/icons-material';
 import './list.css';
 
@@ -12,13 +12,13 @@ const chats = [
   },
   {
     id: 2,
-    name: 'Чат 2',
+    name: 'Чет 2',
     lastMessage: 'BbBbBbBbBbB',
     timestamp: '10:40',
   },
   {
     id: 3,
-    name: 'Чат 3',
+    name: 'Чет 3',
     lastMessage: 'CcCcCcCcCcC',
     timestamp: '10:50',
   },
@@ -58,6 +58,36 @@ const chats = [
     lastMessage: 'QqQqQqQqQ',
     timestamp: 'Вчера',
   },
+  {
+    id: 10,
+    name: 'Чат 9',
+    lastMessage: 'QqQqQqQqQ',
+    timestamp: 'Вчера',
+  },
+  {
+    id: 11,
+    name: 'Чат 9',
+    lastMessage: 'QqQqQqQqQ',
+    timestamp: 'Вчера',
+  },
+  {
+    id: 12,
+    name: 'Чат 9',
+    lastMessage: 'QqQqQqQqQ',
+    timestamp: 'Вчера',
+  },
+  {
+    id: 13,
+    name: 'Чат 9',
+    lastMessage: 'QqQqQqQqQ',
+    timestamp: 'Вчера',
+  },
+  {
+    id: 14,
+    name: 'Чат 9',
+    lastMessage: 'QqQqQqQqQ',
+    timestamp: 'Вчера',
+  },
 ];
 
 const ChatList = () => {
@@ -69,7 +99,8 @@ const ChatList = () => {
   
     return (
       <div className="sidebar">
-        <TextField
+        <Box sx={{ position: 'sticky', top: 0, zIndex: 1 }}>
+          <TextField
           fullWidth
           variant="outlined"
           placeholder="Поиск чатов"
@@ -92,7 +123,8 @@ const ChatList = () => {
             },
           }}
         />
-        
+        </Box>
+        <Box className="chatList" sx={{}}>
         <MuiList sx={{ width: '100%', maxWidth: 360, bgcolor: 'solid' }}>
           {filteredChats.map((chat) => (
             <React.Fragment key={chat.id}>
@@ -118,6 +150,7 @@ const ChatList = () => {
             </React.Fragment>
           ))}
         </MuiList>
+        </Box>
       </div>
     );
 };

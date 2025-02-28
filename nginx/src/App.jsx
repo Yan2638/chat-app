@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { StyledEngineProvider } from "@mui/material";
-import Chat from "./components/chat/Chat.jsx";
+import Header from "./components/chat/Header.jsx";
 import List from "./components/list/List.jsx";
-import Message from "./components/chat/Message.jsx";
+import Chat from "./components/chat/Chat.jsx"
 import Auth from "./components/Auth/Auth.jsx";
 import axios from "axios";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import "./index.css";
+import ChatInput from "./components/chat/ChatInput.jsx";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -59,8 +60,9 @@ const App = () => {
       ) : user ? (
         <>
           <List />
+          <Header />
+          <ChatInput />
           <Chat />
-          <Message />
         </>
       ) : (
         <Navigate to="/" replace />

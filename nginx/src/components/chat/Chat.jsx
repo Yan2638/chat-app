@@ -1,43 +1,80 @@
-import { styled } from '@mui/material/styles';
-import Badge from '@mui/material/Badge';
-import Avatar from '@mui/material/Avatar';
-import Box from '@mui/material/Box';
-import { Typography } from '@mui/material';
-import PhoneIcon from '@mui/icons-material/Phone';
-import "./chat.css";
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import ChatInput from './ChatInput.jsx';
+import Header from './Header.jsx';
+import './chat.css';
 
-const StyledBadge = styled(Badge)(({ theme }) => ({
-  '& .MuiBadge-badge': {
-    backgroundColor: '#44b700',
-    color: '#44b700',
-    width: 12,
-    height: 12,
-    borderRadius: '50%',
-    border: `2px solid ${theme.palette.background.paper}`,
-  },
-}));
+const socket = io('http://localhost:3000', { withCredentials: true });
 
-export default function Header() {
+const Chat = () => {
+  const [messages, setMessages] = useState([]);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/auth-check', { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) {
+          setUserId(data.user.id);
+          console.log('User ID:', data.user.id);
+          socket.emit('authenticate', data.user.id);
+        }
+      })
+      .catch(error => console.error('Ошибка при проверке авторизации:', error));
+
+    fetch('http://localhost:3000/messages')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setMessages(data);
+        } else {
+          console.error('Ошибка: ожидаемый массив, получен:', data);
+          setMessages([]);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при получении сообщений:', error);
+        setMessages([]);
+      });
+
+    socket.on('receiveMessage', (msg) => {
+      console.log("Получено сообщение от сервера:", msg);
+      if (msg.text && !messages.some(message => message.id === msg.id)) {
+        setMessages(prev => [...prev, msg]);
+      }
+    });
+
+    return () => {
+      socket.off('receiveMessage');
+    };
+  }, [userId]);
+
+  const handleSendMessage = (message) => {
+    if (message.trim()) {
+      socket.emit('sendMessage', { senderId: userId, text: message });
+      ([
+        
+      ]);
+    }
+  };
+
   return (
-    <Box className="header">
-      <Box display="flex" alignItems="center" justifyContent="space-between" padding={2}>
-        <Box display="flex" alignItems="center">
-          <StyledBadge
-            overlap="circular"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            variant="dot"
-          >
-            <Avatar
-              alt="Yan Zimnitski"
-              sx={{ width: 50, height: 50 }}
-            />
-          </StyledBadge>
-          <Typography variant="h5" color="white" sx={{ marginLeft: 2 }}>
-            Yan Zimnitski
-          </Typography>
-        </Box>
-        <PhoneIcon className='phoneIcon' color="white" fontSize="large"/>
-      </Box>
-    </Box>
+    <div className='chat-container'>
+      <Header />
+      <div className="chat-messages">
+        {messages.length > 0 ? (
+          messages.map((msg, index) => (
+            <div key={index} className={`chat-message ${msg.sender_id === userId ? "chat-me" : "chat-other"}`}>
+              {msg.text ? msg.text : "Сообщение без текста"}
+            </div>
+          ))
+        ) : (
+          <div>Нет сообщений</div>
+        )}
+      </div>
+      <ChatInput onSendMessage={handleSendMessage} />
+    </div>
   );
-}
+};
+
+export default Chat;

@@ -3,19 +3,42 @@
     width: 250px; 
     background-color: solid;
     height: 100vh;
-    padding: 16px;
+    padding: 2px;
     color: #000;
     position: fixed;
     left: 0;
     top: 0;
   }
+
+  .chatList {
+    overflow-y: auto;
+    max-height: calc(100vh - 160px);
+  }
   
+  .chatList::-webkit-scrollbar {
+    width: 6px; 
+  }
+  
+  .chatList::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2); 
+    border-radius: 4px;
+  }
+  
+  .chatList::-webkit-scrollbar:hover {
+    width: 8px;
+  }
+
   .sidebar .MuiTextField-root {
     margin-bottom: 16px;
   }
-  
+
+  .sidebar .MuiListItem-root {
+  padding-left: 2px;
+  }
+
   .sidebar .MuiList-root {
     padding: 0;
     margin-top: 8px;
+    max-height: calc(100vh - 160px);
   }
   
