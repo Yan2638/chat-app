@@ -56,7 +56,7 @@
   .chat-messages {
     padding: 2px;
     margin-bottom: 120px;
-    margin-top: 35px;
+    margin-top: 40px;
     max-height: 800px;
     overflow-y: auto;
     display: flex;

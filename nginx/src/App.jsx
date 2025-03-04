@@ -9,28 +9,34 @@ import axios from "axios";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import "./index.css";
 import ChatInput from "./components/chat/ChatInput.jsx";
+// import PersonalChat from "./components/chat/PersonalChat.jsx";
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuth = async () => {
+    try {
       const response = await axios.get("http://localhost:3000/auth-check", {
         withCredentials: true,
       });
-      setUser(response.status === 200 ? {} : null);
+      if (response.status === 200 && response.data.user) {
+        setUser(response.data.user);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Ошибка проверки авторизации:", error);
+      setUser(null);
+    }
   };
 
   useEffect(() => {
     const startTime = Date.now();
-
     checkAuth().finally(() => {
       const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(3000 - elapsedTime, 0);
-
-      setTimeout(() => {
-        setLoading(false);
-      }, remainingTime);
+      const remainingTime = Math.max(1500 - elapsedTime, 0);
+      setTimeout(() => setLoading(false), remainingTime);
     });
   }, []);
 

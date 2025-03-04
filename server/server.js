@@ -5,7 +5,8 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const socketIo = require('socket.io');
-const crypto = require('crypto')
+const crypto = require('crypto');
+const { text } = require('stream/consumers');
 
 const app = express();
 
@@ -53,13 +54,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendMessage', async ({senderId, text}) => {
-    console.log('Полученные данные:', { senderId, text }); // Логируем данные перед запросом
+    console.log('Полученные данные:', { senderId, text }); 
   
-    if (!senderId || !text.trim()) return; // Используем text вместо message
+    if (!senderId || !text.trim()) return; 
   
     const newMessage = {
       sender_id: senderId,
-      text, // Здесь используется text
+      text,
       timestamp: new Date(),
     };
   
@@ -67,12 +68,12 @@ io.on('connection', (socket) => {
       const result = await client.query(
         `INSERT INTO "messages" ("sender_id", "text", "timestamp") 
          VALUES ($1, $2, NOW()) RETURNING *`,
-        [senderId, text] // Здесь тоже используем text вместо message
+        [senderId, text] 
       );
       const savedMessage = result.rows[0];
-      io.emit('receiveMessage', savedMessage); // Отправляем сохраненное сообщение
+      io.emit('receiveMessage', savedMessage);
     } catch (err) {
-      console.error('Ошибка при сохранении сообщения:', err);
+      console.error("Ошибка при сохранении сообщения:", err);
     }
   });
   
@@ -91,9 +92,9 @@ io.on('connection', (socket) => {
 app.get('/messages', async (req, res) => {
   try {
     const result = await client.query(
-      `SELECT "messages".*, "Registration"."Name" 
+      `SELECT "messages".*, "users"."Name" 
        FROM "messages"
-       JOIN "Registration" ON "messages"."sender_id" = "Registration"."id"
+       JOIN "users" ON "messages"."sender_id" = "users"."id"
        ORDER BY "timestamp" ASC`
     );
     res.status(200).json(result.rows);
@@ -113,7 +114,7 @@ app.post('/register', async (req, res) => {
 
   try {
     const result = await client.query(
-      `INSERT INTO "Registration" ("Name", "Email", "Password") VALUES ($1, $2, $3) RETURNING *`,
+      `INSERT INTO "users" ("Name", "Email", "Password") VALUES ($1, $2, $3) RETURNING *`,
       [username, email, password]
     );
 
@@ -141,9 +142,8 @@ app.post('/login', async (req, res) => {
   }
 
   try {
-    // Ищем пользователя в базе
     const result = await client.query(
-      'SELECT id, "Name", "Email", "Password" FROM "Registration" WHERE "Email" = $1',
+      'SELECT id, "Name", "Email", "Password" FROM "users" WHERE "Email" = $1',
       [email]
     );
 
@@ -153,21 +153,17 @@ app.post('/login', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Простая проверка пароля (так делать небезопасно!)
     if (password !== user.Password) {
       return res.status(401).json({ error: "Неверный email или пароль!" });
     }
 
-    // Генерируем случайный токен
     const token = crypto.randomBytes(64).toString('hex');
 
-    // Записываем токен в базу
     await client.query(
-      'UPDATE "Registration" SET auth_token = $1 WHERE id = $2',
+      'UPDATE "users" SET auth_token = $1 WHERE id = $2',
       [token, user.id]
     );
 
-    // Устанавливаем токен в cookie
     res.cookie('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -182,6 +178,87 @@ app.post('/login', async (req, res) => {
 });
 
 
+app.post('/createChat', async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Пользователь не авторизован' });
+  }
+
+  try {
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Неверный токен' });
+    }
+
+    const senderId = userResult.rows[0].id;
+    let { userId2 } = req.body;
+
+    userId2 = parseInt(userId2, 10);
+    if (!userId2 || isNaN(userId2) || senderId === userId2) {
+      return res.status(400).json({ message: 'Невозможно создать чат с самим собой или неверный ID' });
+    }
+
+    const userExists = await client.query('SELECT id FROM "users" WHERE id = $1', [userId2]);
+
+    if (userExists.rows.length === 0) {
+      return res.status(400).json({ message: 'Пользователь с таким ID не найден' });
+    }
+
+    const existingChat = await client.query(
+      `SELECT * FROM chats WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)`,
+      [senderId, userId2]
+    );
+
+    if (existingChat.rows.length > 0) {
+      return res.status(400).json({ message: 'Чат с таким пользователем уже существует' });
+    }
+
+    const result = await client.query(
+      'INSERT INTO chats (name, sender_id, receiver_id, created_at) VALUES ($1, $2, $3, NOW()) RETURNING *',
+      [`Чат ${senderId} - ${userId2}`, senderId, userId2]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Ошибка при создании чата:', error);
+    res.status(500).json({ message: 'Ошибка при создании чата' });
+  }
+});
+
+app.get('/chats', async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Пользователь не авторизован' });
+  }
+
+  try {
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Неверный токен' });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    const result = await client.query(
+      `SELECT c.id, c.name, u1."Name" AS sender_name, u2."Name" AS receiver_name
+       FROM "chats" c
+       JOIN "users" u1 ON c.sender_id = u1.id
+       JOIN "users" u2 ON c.receiver_id = u2.id
+       WHERE c.sender_id = $1 OR c.receiver_id = $1
+       ORDER BY c.created_at DESC`,
+      [userId]
+    );
+
+    res.status(200).json(result.rows); 
+  } catch (error) {
+    console.error('Ошибка при получении чатов:', error);
+    res.status(500).json({ message: 'Ошибка при получении чатов' });
+  }
+});
 
 
 app.get('/auth-check', async (req, res) => {
@@ -189,15 +266,14 @@ app.get('/auth-check', async (req, res) => {
   
   if (token) {
     try {
-      // Здесь мы будем искать пользователя в базе данных по токену
       const result = await client.query(
-        `SELECT id, "Name", "Email" FROM "Registration" WHERE "auth_token" = $1`,
+        `SELECT id, "Name", "Email" FROM "users" WHERE "auth_token" = $1`,
         [token]
       );
       
       if (result.rows.length > 0) {
-        const user = result.rows[0];  // Извлекаем первого пользователя, найденного по токену
-        res.status(200).json({ user });  // Возвращаем информацию о пользователе
+        const user = result.rows[0];  
+        res.status(200).json({ user });  
       } else {
         res.status(401).json({ error: "Не найден пользователь с таким токеном" });
       }
