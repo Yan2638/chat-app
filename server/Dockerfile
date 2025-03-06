@@ -5,13 +5,10 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-# Устанавливаем зависимости
 RUN npm install
 
-# Копируем исходники приложения (src, public, другие файлы)
 COPY . .
 
-# Запускаем сборку
 RUN npm run build
 
 # Stage 2: Production stage (Nginx)

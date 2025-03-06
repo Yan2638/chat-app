@@ -3,6 +3,7 @@ import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typogr
 import { Chat as ChatIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import './list.css';
+import { useNavigate } from 'react-router';
 
 const ChatList = () => {
   const [search, setSearch] = useState('');
@@ -10,7 +11,21 @@ const ChatList = () => {
   const [userId, setUserId] = useState('');
   const [error, setError] = useState(null);
   const [chatsList, setChatsList] = useState([]);
-  const [currentUserId] = useState(1); 
+  const [currentUserId, setCurrentUserId] = useState('');
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/auth-check', {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Ошибка получения пользователя');
+      const data = await response.json();
+      setCurrentUserId(data.id);
+    } catch (error) {
+      setError(error.message);
+      console.error('Ошибка получения пользователя:', error);
+    }
+  };
 
   const fetchChats = async () => {
     try {
@@ -23,10 +38,24 @@ const ChatList = () => {
       }
       return await response.json();
     } catch (error) {
-      setError(error.message); 
+      setError(error.message);
       console.error('Ошибка при получении чатов:', error);
+      return [];
     }
   };
+
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchCurrentUser();
+      const chats = await fetchChats();
+      setChatsList(chats);
+    };
+    loadData();
+  }, []);
+
+  const filteredChats = chatsList.filter(chat => 
+    chat.sender_id === currentUserId || chat.receiver_id === currentUserId
+  );
 
   const createChat = async (userId2) => {
     if (!userId2 || isNaN(userId2)) {
@@ -34,9 +63,7 @@ const ChatList = () => {
       return;
     }
 
-    const chatData = {
-      userId2: parseInt(userId2, 10)
-    };
+    const chatData = { userId2: parseInt(userId2, 10) };
 
     try {
       const response = await fetch('http://localhost:3000/createChat', {
@@ -50,18 +77,25 @@ const ChatList = () => {
 
       if (!response.ok) {
         const errorText = await response.json();
-        throw new Error(`Ошибка при создании чата: ${errorText.message}`);
+        throw new Error(`${errorText.message}`);
       }
 
-      const result = await response.json();
-      console.log('Чат успешно создан:', result);
-      return result;
-
+      const newChat = await response.json();
+      setChatsList([...chatsList, newChat]); 
+      handleCloseModal();
+      setError(null);
     } catch (err) {
-      setError(err.message); 
+      setError(err.message);
       console.error('Ошибка при создании чата:', err);
-      return null;
     }
+  };
+
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
+
+  const navigate = useNavigate();
+  const handleChatClick = (chatId) => {
+    navigate(`/chat/${chatId}`); 
   };
 
   const handleCreateChat = async () => {
@@ -75,43 +109,18 @@ const ChatList = () => {
       return;
     }
 
-    try {
-      const chats = await fetchChats();
-      if (chats.some(chat => (chat.sender_id === userId && chat.receiver_id === currentUserId) || 
-                              (chat.sender_id === currentUserId && chat.receiver_id === userId))) {
-        setError('Чат уже существует');
-        return;
-      }
-  
-      const newChat = await createChat(userId);
-  
-      if (newChat) {  
-        setChatsList([...chatsList, { id: Date.now(), name: `Чат ${currentUserId} - ${userId}`, sender_id: currentUserId, receiver_id: userId }]);
-        handleCloseModal();
-        setError(null);  
-      }
-    } catch (err) {
-      setError(`Не удалось создать чат. Попробуйте еще раз. Ошибка: ${err.message}`);
-      console.error('Ошибка при создании чата:', err);
+    const existingChat = chatsList.find(chat => 
+      (chat.sender_id === userId && chat.receiver_id === currentUserId) || 
+      (chat.sender_id === currentUserId && chat.receiver_id === userId)
+    );
+
+    if (existingChat) {
+      setError('Чат уже существует');
+      return;
     }
+
+    await createChat(userId);
   };
-
-  useEffect(() => {
-    const loadChats = async () => {
-      try {
-        const chats = await fetchChats();
-        setChatsList(chats.filter(chat => chat.sender_id === currentUserId || chat.receiver_id === currentUserId)); 
-      } catch (err) {
-        setError('Ошибка при загрузке чатов');
-        console.error('Ошибка при загрузке чатов:', err);
-      }
-    };
-
-    loadChats();
-  }, [currentUserId]);
-
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
 
   return (
     <div className="sidebar">
@@ -138,32 +147,36 @@ const ChatList = () => {
       </Box>
 
       <Box className="chatList">
-        {error && <Alert severity="error">{error}</Alert>}
-        {chatsList.length === 0 ? (
+        {filteredChats.length === 0 ? (
           <Typography>Нет чатов</Typography>
         ) : (
           <MuiList sx={{ width: '100%', maxWidth: 360 }}>
-            {chatsList.map((chat) => (
-              <ListItem key={chat.id} alignItems="flex-start">
-                <ListItemAvatar>
-                  <Avatar>
-                    <ChatIcon />
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={chat.name}
-                  secondary={
-                    <>
-                      <Typography component="span" variant="body2" color="text.primary">
-                        {chat.lastMessage || 'Нет сообщений'}
-                      </Typography>
-                      {chat.timestamp ? ` — ${chat.timestamp}` : ''}
-                    </>
-                  }
-                />
-                <Divider variant="inset" component="div" />
-              </ListItem>
-            ))}
+            {filteredChats.map((chat) => {
+              const isSender = chat.sender_id === currentUserId;
+              const userName = isSender ? chat.receiver_name : chat.sender_name;
+
+              return (
+                <ListItem key={chat.id} alignItems="flex-start" button={true} onClick={()=> handleChatClick(chat.id)}>
+                  <ListItemAvatar>
+                    <Avatar>
+                      <ChatIcon />
+                    </Avatar>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={userName}  
+                    secondary={
+                      <>
+                        <Typography component="span" variant="body2" color="text.primary">
+                          {chat.lastMessage || 'Нет сообщений'}
+                        </Typography>
+                        {chat.timestamp ? ` — ${chat.timestamp}` : ''}
+                      </>
+                    }
+                  />
+                  <Divider variant="inset" component="div" />
+                </ListItem>
+              );
+            })}
           </MuiList>
         )}
       </Box>
@@ -180,7 +193,7 @@ const ChatList = () => {
             sx={{ mb: 2 }}
           />
 
-          {error && <Alert severity="error">{error}</Alert>} {/* Выводим ошибку, если она есть */}
+          {error && <Alert severity="error">{error}</Alert>}
 
           <Box sx={{ textAlign: 'right' }}>
             <Button variant="outlined" onClick={handleCloseModal}>Отмена</Button>

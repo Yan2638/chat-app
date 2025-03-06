@@ -12,8 +12,8 @@ const app = express();
 
 app.use(cors({
   origin: "http://localhost:5173",
-  methods: "GET, POST, PUT, DELETE ",
-  allowedHeaders: "Content-Type, Authorization",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 }));
 
@@ -37,7 +37,7 @@ const io = socketIo(server, {
   cors: {
     origin: "http://localhost:5173",
     methods: ["GET", "POST"],
-    allowedHeaders: "Content-Type, Authorization",
+    allowedHeaders: ["Content-Type, Authorization"],
     credentials: true,
   }
 });
@@ -53,29 +53,29 @@ io.on('connection', (socket) => {
     console.log(`Пользователь ${userId} подключился к чату`);
   });
 
-  socket.on('sendMessage', async ({senderId, text}) => {
-    console.log('Полученные данные:', { senderId, text }); 
+  socket.on('sendMessage', async ({ senderId, chatId, text }) => {
+    console.log('Полученные данные:', { senderId, chatId, text });
   
-    if (!senderId || !text.trim()) return; 
-  
-    const newMessage = {
-      sender_id: senderId,
-      text,
-      timestamp: new Date(),
-    };
+    if (!senderId || !chatId || !text.trim()) return;
   
     try {
       const result = await client.query(
-        `INSERT INTO "messages" ("sender_id", "text", "timestamp") 
-         VALUES ($1, $2, NOW()) RETURNING *`,
-        [senderId, text] 
+        `INSERT INTO "messages" (sender_id, chat_id, text, timestamp) 
+         VALUES ($1, $2, $3, NOW()) RETURNING *`,
+        [senderId, chatId, text]
       );
+  
       const savedMessage = result.rows[0];
-      io.emit('receiveMessage', savedMessage);
+      const recipientSocketId = users.get(chatId);
+      
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('receiveMessage', savedMessage);
+      }
     } catch (err) {
       console.error("Ошибка при сохранении сообщения:", err);
     }
   });
+  
   
 
   socket.on('disconnect', () => {
@@ -89,20 +89,95 @@ io.on('connection', (socket) => {
   });
 });
 
-app.get('/messages', async (req, res) => {
+app.get('/users', async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Пользователь не авторизован' });
+  }
+
   try {
-    const result = await client.query(
-      `SELECT "messages".*, "users"."Name" 
-       FROM "messages"
-       JOIN "users" ON "messages"."sender_id" = "users"."id"
-       ORDER BY "timestamp" ASC`
-    );
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Неверный токен' });
+    }
+
+    const result = await client.query('SELECT id, "Name", "Email" FROM "users"');
+
     res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Ошибка при получении сообщений:', err);
-    res.status(500).json({ error: 'Ошибка сервера' });
+  } catch (error) {
+    console.error('Ошибка при получении пользователей:', error);
+    res.status(500).json({ message: 'Ошибка при получении пользователей' });
   }
 });
+
+app.get('/messages/:chatId', async (req, res) => {
+  const { chatId } = req.params;
+  console.log('chatId:', chatId)
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: "Пользователь не авторизован" });
+  }
+
+  try {
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: "Неверный токен" });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    const result = await client.query(
+      `SELECT m.id, m.text, m.chat_id, m.sender_id, u."Name" AS sender_name
+       FROM "messages" m
+       JOIN "users" u ON m.sender_id = u.id
+       WHERE m.chat_id = $1
+       ORDER BY m.timestamp ASC`, 
+      [chatId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Ошибка при загрузке сообщений:", error);
+    res.status(500).json({ message: "Ошибка при загрузке сообщений" });
+  }
+});
+
+
+app.post('/messages', async (req, res) => {
+  const { text, chatId, senderId } = req.body;
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Пользователь не авторизован' });
+  }
+
+  try {
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: 'Неверный токен' });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    const result = await client.query(
+      `INSERT INTO "messages" (sender_id, chat_id, text) 
+       VALUES ($1, $2, $3) RETURNING id`,
+      [senderId, chatId, text]
+    );
+
+    res.status(201).json({ message: 'Сообщение успешно отправлено', messageId: result.rows[0].id });
+  } catch (error) {
+    console.error("Ошибка при отправке сообщения:", error);
+    res.status(500).json({ message: "Ошибка при отправке сообщения" });
+  }
+});
+
+
 
 
 app.post('/register', async (req, res) => {
@@ -227,6 +302,39 @@ app.post('/createChat', async (req, res) => {
   }
 });
 
+app.get('/chat/:chatId', async (req, res) => {
+  const chatId = req.params.id;
+  const token = req.cookies.auth_token;
+  
+  console.log('Cookies:', req.cookies);
+  console.log('Auth token:', req.cookies.auth_token);
+  if (!token) {
+    return res.status(401).json({ message: "Пользователь не авторизован" });
+  }
+
+  try {
+    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ message: "Неверный токен" });
+    }
+
+    const messages = await client.query(
+      `SELECT m.text, u."Name" AS sender_name
+       FROM "messages" m
+       JOIN "users" u ON m.sender_id = u.id
+       WHERE m.chat_id = $1 ORDER BY m.timestamp ASC`,
+      [chatId]
+    );
+    res.json(messages.rows);
+  } catch (error) {
+    console.error("Ошибка при загрузке сообщений:", error);
+    res.status(500).json({ message: "Ошибка при загрузке сообщений" });
+  }
+});
+
+
+
 app.get('/chats', async (req, res) => {
   const token = req.cookies.auth_token;
 
@@ -253,12 +361,15 @@ app.get('/chats', async (req, res) => {
       [userId]
     );
 
+    console.log('Чаты для пользователя:', result.rows);
+
     res.status(200).json(result.rows); 
   } catch (error) {
     console.error('Ошибка при получении чатов:', error);
     res.status(500).json({ message: 'Ошибка при получении чатов' });
   }
 });
+
 
 
 app.get('/auth-check', async (req, res) => {

@@ -60,6 +60,21 @@ const App = () => {
       ),
     },
     {
+      path: "/chat/:chatId",
+      element: loading ? (
+        <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
+      ) : user ? (
+        <>
+          <List />
+          <Header />
+          <ChatInput />
+          <Chat />
+        </>
+      ) : (
+        <Navigate to="/" replace />
+      ),
+    },
+    {
       path: "/chat",
       element: loading ? (
         <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
