@@ -9,7 +9,7 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+RUN node server.js
 
 # Stage 2: Production stage (Nginx)
 FROM nginx:latest
