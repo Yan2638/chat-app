@@ -11,7 +11,6 @@ const Chat = () => {
   const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
   const [userId, setUserId] = useState(null);
-  const authToken = localStorage.getItem("authToken");
 
   useEffect(() => {
     fetch('http://localhost:3000/auth-check', { credentials: 'include' })
@@ -24,71 +23,31 @@ const Chat = () => {
       })
       .catch(error => console.error('Ошибка авторизации:', error));
 
-    if (chatId) {
-      fetch(`http://localhost:3000/messages/${chatId}`, {
-        method: "GET",
-        credentials: "include",
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setMessages(data);
-        }
-      })
-      .catch(error => console.error("Ошибка загрузки сообщений:", error));
-    }
-
     socket.on('receiveMessage', (msg) => {
       console.log("Получено сообщение:", msg);
+      console.log("chatId из URL:", chatId);
+      console.log("chat_id из сообщения:", msg.chat_id);
+    
       if (msg.chat_id === chatId) {
         setMessages(prevMessages => {
-          return [...prevMessages, msg];
+          const updatedMessages = [...prevMessages, msg];
+          console.log("Обновленные сообщения:", updatedMessages);
+          return updatedMessages;
         });
       }
     });
+    
+    fetch(`http://localhost:3000/messages/${chatId}`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => {
+        setMessages(data);
+      })
+      .catch(error => console.error('Ошибка при загрузке сообщений:', error));
 
     return () => {
       socket.off('receiveMessage');
     };
   }, [chatId]);
-
-  const sendMessage = async (chatId, senderId, text) => {
-    try {
-      const response = await fetch('http://localhost:3000/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authToken ? `Bearer ${authToken}` : "", 
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          text: text,
-          chatId: chatId,
-          senderId: senderId,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        console.log('Сообщение отправлено:', data);
-        const newMessage = {
-          id: data.messageId, 
-          text: text,
-          sender_id: senderId,
-          chat_id: chatId,
-          sender_name: 'You',
-          timestamp: new Date().toISOString(),
-        };
-        setMessages(prevMessages => [...prevMessages, newMessage]);
-        socket.emit('sendMessage', { senderId, chatId, text });
-      } else {
-        console.error('Ошибка при отправке сообщения:', data.message);
-      }
-    } catch (error) {
-      console.error('Ошибка при отправке запроса:', error);
-    }
-  };
 
   const handleSendMessage = (message) => {
     if (message.trim()) {
@@ -97,21 +56,38 @@ const Chat = () => {
         return;
       }
       console.log('Отправка сообщения:', { chatId, senderId: userId, text: message });
-      sendMessage(chatId, userId, message); 
+
+      const receiverId = userId === 5 ? 3 : 5;
+
+      socket.emit('sendMessage', { senderId: userId, chatId, text: message });
+
+      const newMessage = {
+        id: Date.now(),
+        text: message,
+        sender_id: userId,
+        receiver_id: receiverId,
+        chat_id: chatId,
+        sender_name: 'You',
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prevMessages => [...prevMessages, newMessage]);
     }
   };
 
   useEffect(() => {
-    console.log('chatId из URL:', chatId);
-  }, [chatId]);
+    const chatContainer = document.getElementById("chatContainer");
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  }, [messages]);
 
   return (
     <div className='chat-container'>
       <Header />
-      <div className="chat-messages">
+      <div id="chatContainer" className="chat-messages">
         {messages.length > 0 ? (
-          messages.map((msg, index) => (
-            <div key={index} className={`chat-message ${(msg.sender_id) === (userId) ? "chat-me" : "chat-other"}`}>
+          messages.map((msg) => (
+            <div key={msg.id} className={`chat-message ${msg.sender_id === userId ? "chat-me" : "chat-other"}`}>
               {msg.text}
             </div>
           ))

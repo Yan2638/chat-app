@@ -53,12 +53,42 @@ io.on('connection', (socket) => {
     console.log(`Пользователь ${userId} подключился к чату`);
   });
 
+  const getParticipants = async (chatId) => {
+    console.log('Запрос участников для чата с ID:', chatId);
+  
+    try {
+      const result = await client.query(
+        `SELECT sender_id, receiver_id FROM chats WHERE id = $1`,
+        [chatId]
+      );
+  
+      if (result.rows.length === 0) {
+        console.error('Чат не найден для chatId:', chatId);
+        throw new Error('Чат не найден');
+      }
+  
+      const participants = result.rows[0];
+      console.log('Получены участники чата:', participants);
+  
+      return participants;
+    } catch (error) {
+      console.error('Ошибка при получении участников чата:', error);
+      throw error;
+    }
+  };
+  
   socket.on('sendMessage', async ({ senderId, chatId, text }) => {
     console.log('Полученные данные:', { senderId, chatId, text });
   
     if (!senderId || !chatId || !text.trim()) return;
   
     try {
+      const { sender_id, receiver_id } = await getParticipants(chatId);
+      console.log('Участники чата:', { sender_id, receiver_id });
+  
+      const receiverId = senderId === sender_id ? receiver_id : sender_id;
+      console.log('Отправитель:', senderId, 'Получатель:', receiverId);
+  
       const result = await client.query(
         `INSERT INTO "messages" (sender_id, chat_id, text, timestamp) 
          VALUES ($1, $2, $3, NOW()) RETURNING *`,
@@ -66,17 +96,35 @@ io.on('connection', (socket) => {
       );
   
       const savedMessage = result.rows[0];
-      const recipientSocketId = users.get(chatId);
-      
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit('receiveMessage', savedMessage);
-      }
+      console.log('Сохраненное сообщение в базе данных:', savedMessage);
+  
+      const participants = [sender_id, receiver_id];
+  
+      participants.forEach(userId => {
+        const recipientSocketId = users.get(userId); 
+        if (recipientSocketId) {
+          console.log(`Отправка сообщения для пользователя ${userId} с сокетом ${recipientSocketId}`);
+          io.to(recipientSocketId).emit('receiveMessage', savedMessage); 
+        } else {
+          console.warn(`Нет активного сокета для пользователя ${userId}. Не удалось отправить сообщение.`);
+        }
+      });
+  
     } catch (err) {
       console.error("Ошибка при сохранении сообщения:", err);
     }
   });
+  socket.on('connect', (userId) => {
+    console.log('Пользователь подключен:', userId);
+    console.log('Текущие активные сокеты:', Array.from(users.entries()));
+    users.set(userId, socket.id);
+  });
   
-  
+  socket.on('disconnect', (userId) => {
+    console.log('Пользователь отключен:', userId);
+    console.log('Текущие активные сокеты после отключения:', Array.from(users.entries()));
+    users.delete(userId);
+  });
 
   socket.on('disconnect', () => {
     for (let [userId, socketId] of users) {
