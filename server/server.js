@@ -306,7 +306,7 @@ app.get('/chat/:chatId', async (req, res) => {
   const chatId = req.params.id;
   const token = req.cookies.auth_token;
   
-  console.log('Cookies:', req.cookies);
+  console.log('Cookies:', req.cookies); 
   console.log('Auth token:', req.cookies.auth_token);
   if (!token) {
     return res.status(401).json({ message: "Пользователь не авторизован" });

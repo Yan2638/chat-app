@@ -67,12 +67,21 @@ const Chat = () => {
           senderId: senderId,
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         console.log('Сообщение отправлено:', data);
-        socket.emit('sendMessage', data);
+        const newMessage = {
+          id: data.messageId, 
+          text: text,
+          sender_id: senderId,
+          chat_id: chatId,
+          sender_name: 'You',
+          timestamp: new Date().toISOString(),
+        };
+        setMessages(prevMessages => [...prevMessages, newMessage]);
+        socket.emit('sendMessage', { senderId, chatId, text });
       } else {
         console.error('Ошибка при отправке сообщения:', data.message);
       }
@@ -87,6 +96,7 @@ const Chat = () => {
         console.error('Ошибка: ID пользователя или chatId не найден');
         return;
       }
+      console.log('Отправка сообщения:', { chatId, senderId: userId, text: message });
       sendMessage(chatId, userId, message); 
     }
   };
@@ -101,7 +111,7 @@ const Chat = () => {
       <div className="chat-messages">
         {messages.length > 0 ? (
           messages.map((msg, index) => (
-            <div key={index} className={`chat-message ${parseInt(msg.sender_id) === parseInt(userId) ? "chat-me" : "chat-other"}`}>
+            <div key={index} className={`chat-message ${(msg.sender_id) === (userId) ? "chat-me" : "chat-other"}`}>
               {msg.text}
             </div>
           ))
