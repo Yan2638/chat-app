@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/chat-app/',
   plugins: [react()],
   root: './',
-  publicDir: 'nginx/public', 
+  publicDir: 'nginx/public',
   esbuild: {
     jsxInject: `import React from 'react'`,
   },
@@ -17,4 +18,7 @@ export default defineConfig({
     strictPort: true,
     port: 5173,
   },
+  build: {
+    outDir: 'dist',
+  }
 })

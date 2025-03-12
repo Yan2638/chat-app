@@ -11,7 +11,7 @@ const { text } = require('stream/consumers');
 const app = express();
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ['http://localhost', 'http://localhost:3000'],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -25,7 +25,7 @@ const client = new Client({
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
+  port: process.env.DB_PORT || 5432,
 });
 
 client.connect()
@@ -35,9 +35,9 @@ client.connect()
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: ['http://localhost', 'http://localhost:3001'],
     methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type, Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }
 });
@@ -126,15 +126,7 @@ io.on('connection', (socket) => {
     users.delete(userId);
   });
 
-  socket.on('disconnect', () => {
-    for (let [userId, socketId] of users) {
-      if (socketId === socket.id) {
-        users.delete(userId);
-        console.log(`Пользователь ${userId} отключился`);
-        break;
-      }
-    }
-  });
+
 });
 
 app.get('/users', async (req, res) => {
@@ -266,7 +258,7 @@ app.post('/login', async (req, res) => {
 
   try {
     const result = await client.query(
-      'SELECT id, "Name", "Email", "Password" FROM "users" WHERE "Email" = $1',
+      'SELECT "id", "Name", "Email", "Password" FROM "users" WHERE "Email" = $1',
       [email]
     );
 
