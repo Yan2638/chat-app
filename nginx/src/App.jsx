@@ -3,13 +3,12 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import { StyledEngineProvider } from "@mui/material";
 import Header from "./components/chat/Header.jsx";
 import List from "./components/list/List.jsx";
-import Chat from "./components/chat/Chat.jsx"
+import Chat from "./components/chat/Chat.jsx";
 import Auth from "./components/Auth/Auth.jsx";
 import axios from "axios";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import "./index.css";
 import ChatInput from "./components/chat/ChatInput.jsx";
-// import PersonalChat from "./components/chat/PersonalChat.jsx";
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -36,23 +35,25 @@ const App = () => {
     checkAuth().finally(() => {
       const elapsedTime = Date.now() - startTime;
       const remainingTime = Math.max(1500 - elapsedTime, 0);
-      setTimeout(() => setLoading(false), remainingTime);
+      setTimeout(() => {
+        setLoading(false);
+      }, remainingTime);
     });
   }, []);
 
   const router = createBrowserRouter([
     {
-      path: "/",
+      path: "/chat-app/",
       element: loading ? (
         <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
       ) : user ? (
-        <Navigate to="/chat" replace />
+        <Navigate to="/chat-app/chat" replace />
       ) : (
         <Auth />
       ),
     },
     {
-      path: "/auth",
+      path: "/chat-app/auth",
       element: loading ? (
         <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
       ) : (
@@ -60,7 +61,7 @@ const App = () => {
       ),
     },
     {
-      path: "/chat/:chatId",
+      path: "/chat-app/chat/:chatId",
       element: loading ? (
         <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
       ) : user ? (
@@ -71,11 +72,11 @@ const App = () => {
           <Chat />
         </>
       ) : (
-        <Navigate to="/" replace />
+        <Navigate to="/chat-app/" replace />
       ),
     },
     {
-      path: "/chat",
+      path: "/chat-app/chat",
       element: loading ? (
         <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
       ) : user ? (
@@ -86,7 +87,7 @@ const App = () => {
           <Chat />
         </>
       ) : (
-        <Navigate to="/" replace />
+        <Navigate to="/chat-app/" replace />
       ),
     },
   ]);
@@ -99,7 +100,7 @@ const App = () => {
             <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
           </div>
         ) : (
-          <RouterProvider router={router} />
+          <RouterProvider router={router} basename="/chat-app" />
         )}
       </StyledEngineProvider>
     </div>

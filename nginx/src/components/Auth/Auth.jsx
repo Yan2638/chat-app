@@ -33,7 +33,7 @@ const Authentication = () => {
           );
           
           console.log('Авторизация успешна', response.data);
-          window.location.href = '/chat';
+          window.location.href = '/chat-app/chat';
         } catch (error) {
           console.error('Ошибка при логине', error.response?.data?.error || error);
         }
@@ -49,7 +49,7 @@ const Authentication = () => {
               );
               
               console.log('Регистрация успешна', response.data);
-              window.location.href = '/chat'; 
+              window.location.href = '/chat-app/chat'; 
             } catch (error) {
               console.error('Ошибка при регистрации', error.response?.data?.error || error);
             }

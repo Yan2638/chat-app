@@ -95,7 +95,7 @@ const ChatList = () => {
 
   const navigate = useNavigate();
   const handleChatClick = (chatId) => {
-    navigate(`/chat/${chatId}`); 
+    navigate(`/chat-app/chat/${chatId}`); 
   };
 
   const handleCreateChat = async () => {
@@ -156,7 +156,7 @@ const ChatList = () => {
               const userName = isSender ? chat.receiver_name : chat.sender_name;
 
               return (
-                <ListItem key={chat.id} alignItems="flex-start" button={true} onClick={()=> handleChatClick(chat.id)}>
+                <ListItem key={chat.id} alignItems="flex-start" button="true" onClick={()=> handleChatClick(chat.id)}>
                   <ListItemAvatar>
                     <Avatar>
                       <ChatIcon />

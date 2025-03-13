@@ -11,7 +11,7 @@ const { text } = require('stream/consumers');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost', 'http://localhost:3000'],
+  origin: ['http://localhost', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000'],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -35,7 +35,7 @@ client.connect()
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ['http://localhost', 'http://localhost:3001'],
+    origin: ['http://localhost', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:3000'],
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -86,6 +86,11 @@ io.on('connection', (socket) => {
       const { sender_id, receiver_id } = await getParticipants(chatId);
       console.log('Участники чата:', { sender_id, receiver_id });
   
+      if (![sender_id, receiver_id].includes(senderId)) {
+        console.error('Пользователь не является участником чата');
+        return;
+      }
+  
       const receiverId = senderId === sender_id ? receiver_id : sender_id;
       console.log('Отправитель:', senderId, 'Получатель:', receiverId);
   
@@ -114,6 +119,7 @@ io.on('connection', (socket) => {
       console.error("Ошибка при сохранении сообщения:", err);
     }
   });
+  
   socket.on('connect', (userId) => {
     console.log('Пользователь подключен:', userId);
     console.log('Текущие активные сокеты:', Array.from(users.entries()));
@@ -342,7 +348,7 @@ app.post('/createChat', async (req, res) => {
   }
 });
 
-app.get('/chat/:chatId', async (req, res) => {
+app.get('/chat-app/chat/:chatId', async (req, res) => {
   const chatId = req.params.id;
   const token = req.cookies.auth_token;
   

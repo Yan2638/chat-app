@@ -5,25 +5,26 @@ import ChatInput from './ChatInput.jsx';
 import Header from './Header.jsx';
 import './chat.css';
 
-const socket = io('http://localhost:3000', { withCredentials: true });
-
 const Chat = () => {
   const { chatId } = useParams();
   const [messages, setMessages] = useState([]);
   const [userId, setUserId] = useState(null);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
+    const newSocket = io('http://localhost:3000', { withCredentials: true });
+
     fetch('http://localhost:3000/auth-check', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.user) {
           setUserId(data.user.id);
-          socket.emit('authenticate', data.user.id);
+          newSocket.emit('authenticate', data.user.id);
         }
       })
       .catch(error => console.error('Ошибка авторизации:', error));
 
-    socket.on('receiveMessage', (msg) => {
+    newSocket.on('receiveMessage', (msg) => {
       console.log("Получено сообщение:", msg);
       console.log("chatId из URL:", chatId);
       console.log("chat_id из сообщения:", msg.chat_id);
@@ -36,7 +37,7 @@ const Chat = () => {
         });
       }
     });
-    
+
     fetch(`http://localhost:3000/messages/${chatId}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
@@ -44,8 +45,11 @@ const Chat = () => {
       })
       .catch(error => console.error('Ошибка при загрузке сообщений:', error));
 
+    setSocket(newSocket);
+
     return () => {
-      socket.off('receiveMessage');
+      newSocket.off('receiveMessage');
+      newSocket.disconnect();
     };
   }, [chatId]);
 
