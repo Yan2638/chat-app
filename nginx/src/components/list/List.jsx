@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, Box, Modal, Button, Alert } from '@mui/material';
+import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, Box, Modal, Button, Alert, IconButton, InputAdornment } from '@mui/material';
 import { Chat as ChatIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
-import './list.css';
 import { useNavigate } from 'react-router';
+import './list.css';
 
 const ChatList = () => {
   const [search, setSearch] = useState('');
@@ -13,76 +13,66 @@ const ChatList = () => {
   const [chatsList, setChatsList] = useState([]);
   const [currentUserId, setCurrentUserId] = useState('');
 
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/auth-check', {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Ошибка получения пользователя');
-      const data = await response.json();
-      setCurrentUserId(data.id);
-    } catch (error) {
-      setError(error.message);
-      console.error('Ошибка получения пользователя:', error);
-    }
-  };
-
-  const fetchChats = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/chats', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Ошибка при получении чатов');
-      }
-      return await response.json();
-    } catch (error) {
-      setError(error.message);
-      console.error('Ошибка при получении чатов:', error);
-      return [];
-    }
-  };
-
   useEffect(() => {
-    const loadData = async () => {
-      await fetchCurrentUser();
-      const chats = await fetchChats();
-      setChatsList(chats);
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/auth-check', { credentials: 'include' });
+        if (!response.ok) throw new Error('Ошибка получения пользователя');
+        const data = await response.json();
+        setCurrentUserId(data.id);
+      } catch (error) {
+        setError(error.message);
+        console.error('Ошибка получения пользователя:', error);
+      }
     };
-    loadData();
+
+    const fetchChats = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/chats', { method: 'GET', credentials: 'include' });
+        if (!response.ok) throw new Error('Ошибка при получении чатов');
+        const chats = await response.json();
+        setChatsList(chats);
+      } catch (error) {
+        setError(error.message);
+        console.error('Ошибка при получении чатов:', error);
+      }
+    };
+
+    fetchCurrentUser();
+    fetchChats();
   }, []);
 
-  const filteredChats = chatsList.filter(chat => 
-    chat.sender_id === currentUserId || chat.receiver_id === currentUserId
-  );
+  const filteredChats = chatsList.filter(chat => chat.sender_id === currentUserId || chat.receiver_id === currentUserId);
 
-  const createChat = async (userId2) => {
-    if (!userId2 || isNaN(userId2)) {
-      setError('Неверный ID пользователя');
-      return;
-    }
+  const navigate = useNavigate();
+  const handleChatClick = (chatId) => navigate(`/chat-app/chat/${chatId}`);
 
-    const chatData = { userId2: parseInt(userId2, 10) };
+  const handleCreateChat = async () => {
+    if (!userId.trim()) return setError('Введите ID пользователя');
+    if (userId === currentUserId) return setError('Невозможно создать чат с самим собой');
+    
+    const existingChat = chatsList.find(chat => 
+      (chat.sender_id === userId && chat.receiver_id === currentUserId) || 
+      (chat.sender_id === currentUserId && chat.receiver_id === userId)
+    );
+    if (existingChat) return setError('Чат уже существует');
 
     try {
       const response = await fetch('http://localhost:3000/createChat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(chatData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId2: parseInt(userId, 10) }),
         credentials: 'include',
       });
 
       if (!response.ok) {
         const errorText = await response.json();
-        throw new Error(`${errorText.message}`);
+        throw new Error(errorText.message);
       }
 
       const newChat = await response.json();
       setChatsList([...chatsList, newChat]); 
-      handleCloseModal();
+      setOpenModal(false);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -90,49 +80,27 @@ const ChatList = () => {
     }
   };
 
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
-
-  const navigate = useNavigate();
-  const handleChatClick = (chatId) => {
-    navigate(`/chat-app/chat/${chatId}`); 
-  };
-
-  const handleCreateChat = async () => {
-    if (!userId.trim()) {
-      setError('Введите ID пользователя');
-      return;
-    }
-
-    if (userId === currentUserId) {
-      setError('Невозможно создать чат с самим собой');
-      return;
-    }
-
-    const existingChat = chatsList.find(chat => 
-      (chat.sender_id === userId && chat.receiver_id === currentUserId) || 
-      (chat.sender_id === currentUserId && chat.receiver_id === userId)
-    );
-
-    if (existingChat) {
-      setError('Чат уже существует');
-      return;
-    }
-
-    await createChat(userId);
-  };
-
   return (
     <div className="sidebar">
-      <Box sx={{ position: 'sticky', top: 0, zIndex: 1 }}>
+      <Box sx={{ position: 'sticky', top: 0, zIndex: 1, mt: 2 }}>
         <TextField
           fullWidth
           variant="outlined"
           placeholder="Поиск чатов"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          slotProps={{
+            input: {
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={() => setOpenModal(true)}>
+                  <AddIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }
+          }}
           sx={{
-            mt: 2,
             borderRadius: 4,
             '& .MuiOutlinedInput-root': {
               borderRadius: '16px',
@@ -141,9 +109,6 @@ const ChatList = () => {
             },
           }}
         />
-        <Button variant="contained" color="primary" onClick={handleOpenModal} sx={{ marginTop: 2 }}>
-          <AddIcon />
-        </Button>
       </Box>
 
       <Box className="chatList">
@@ -156,14 +121,14 @@ const ChatList = () => {
               const userName = isSender ? chat.receiver_name : chat.sender_name;
 
               return (
-                <ListItem key={chat.id} alignItems="flex-start" button="true" onClick={()=> handleChatClick(chat.id)}>
+                <ListItem key={chat.id} alignItems="flex-start" button onClick={() => handleChatClick(chat.id)}>
                   <ListItemAvatar>
                     <Avatar>
                       <ChatIcon />
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={userName}  
+                    primary={`${userName} (ID: ${chat.id})`}  
                     secondary={
                       <>
                         <Typography component="span" variant="body2" color="text.primary">
@@ -181,10 +146,9 @@ const ChatList = () => {
         )}
       </Box>
 
-      <Modal open={openModal} onClose={handleCloseModal}>
+      <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Box sx={modalStyles}>
           <Typography variant="h6">Создать новый чат</Typography>
-
           <TextField
             label="ID собеседника"
             fullWidth
@@ -192,11 +156,9 @@ const ChatList = () => {
             onChange={(e) => setUserId(e.target.value)}
             sx={{ mb: 2 }}
           />
-
           {error && <Alert severity="error">{error}</Alert>}
-
           <Box sx={{ textAlign: 'right' }}>
-            <Button variant="outlined" onClick={handleCloseModal}>Отмена</Button>
+            <Button variant="outlined" onClick={() => setOpenModal(false)}>Отмена</Button>
             <Button variant="contained" color="primary" onClick={handleCreateChat}>Создать</Button>
           </Box>
         </Box>

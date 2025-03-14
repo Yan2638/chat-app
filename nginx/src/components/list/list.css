@@ -41,4 +41,7 @@
     margin-top: 8px;
     max-height: calc(100vh - 160px);
   }
+  .css-1fr6gvx-MuiButtonBase-root-MuiButton-root{
+    box-shadow: none;
+  }
   

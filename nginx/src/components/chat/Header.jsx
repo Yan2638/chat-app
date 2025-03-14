@@ -6,6 +6,7 @@ import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import { Typography } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
+import LogoutIcon from '@mui/icons-material/Logout';
 import "./chat.css";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -48,6 +49,7 @@ export default function Header() {
           </Typography>
         </Box>
         <PhoneIcon className='phoneIcon' fontSize="large" />
+        <LogoutIcon className="logout" fontSize="large" />
       </Box>
     </Box>
   );
