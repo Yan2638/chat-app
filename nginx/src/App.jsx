@@ -9,6 +9,8 @@ import axios from "axios";
 import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import "./index.css";
 import ChatInput from "./components/chat/ChatInput.jsx";
+import {API_URL} from './constants'
+
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -16,7 +18,7 @@ const App = () => {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth-check", {
+      const response = await axios.get(`${API_URL}/auth-check`, {
         withCredentials: true,
       });
       if (response.status === 200 && response.data.user) {

@@ -3,7 +3,7 @@
     position: fixed;
     top: 0; 
     left: 250px;
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.1);
     z-index: 1000; 
     align-items: center;
     justify-content: space-between;
@@ -16,14 +16,14 @@
   }
 
   .sendIcon {
-    text-shadow: -2px 0 #163A7B, 0 2px #163A7B, 2px 0 #163A7B, 0 -2px #163A7B; color: gray;
+    text-shadow: -2px 0 #6c7d9f, 0 2px #6c7d9f, 2px 0 #6c7d9f, 0 -2px #6c7d9f; color: gray;
     font-size:30px;
     margin-left: auto;
     justify-content: center;
     cursor: pointer;
   }
   .sendIcon:hover {
-    color: #163A7B;
+    color: #6c7d9f;
   }
   .emojiPicker {
     color: gray;
@@ -69,7 +69,7 @@
   .chat-messages {
     padding: 2px;
     margin-bottom: 120px;
-    margin-top: 40px;
+    margin-top: 30px;
     max-height: 800px;
     overflow-y: auto;
     display: flex;
@@ -96,5 +96,7 @@
     text-align: left;
   }
 
-
+  .chat-input {
+    background-color: solid;
+  }
   

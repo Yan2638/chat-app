@@ -9,6 +9,7 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router';
 import "./chat.css";
+import {API_URL} from '../../constants'
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
@@ -26,10 +27,10 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 export default function Header() {
   const [name, setName] = useState("Гость");
   const navigate = useNavigate ();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/auth-check", { withCredentials: true })
+    axios.get(`${API_URL}/auth-check`, { withCredentials: true })
       .then((res) => {
         setName(res.data.user.Name || "Гость");
       })
@@ -41,7 +42,7 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:3000/logout", {}, { withCredentials: true });
+      const response = await axios.post(`${API_URL}/logout`, {}, { withCredentials: true });
       if (response.status === 200) {
         localStorage.removeItem('auth_token');
         sessionStorage.removeItem('auth_token');
@@ -74,7 +75,7 @@ export default function Header() {
         </Box>
         <Box sx={{ display: 'flex', gap: '25px' }}>
         <PhoneIcon className='phoneIcon' fontSize="large" />
-        <LogoutIcon onClick={handleLogout} className="logout" fontSize="large" sx={{cursor: 'pointer'}} />
+        <LogoutIcon onClick={handleLogout} className="logout" fontSize="large" sx={{cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.5 : 1}} />
         </Box>
       </Box>
     </Box>

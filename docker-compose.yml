@@ -36,7 +36,7 @@ services:
       DB_PORT: 5432
       DB_NAME: chat-app-register
     ports:
-      - '3000:3000'
+      - '3001:3000'
     volumes:
       - ./server:/app
       - /app/node_modules

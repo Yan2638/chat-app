@@ -27,20 +27,23 @@ const ChatInput = ({onSendMessage}) => {
         <EmojiEmotions className='emojiPicker'/>
       </IconButton>
       <TextField
+        className='chatInput'
         value={text}
         onChange={(e) => setText(e.target.value)}
         variant="outlined"
         placeholder="Введите сообщение..."
         fullWidth
         sx={{
-          backgroundColor: 'solid',
           borderRadius: 2,
           '& .MuiOutlinedInput-root': {
             '& fieldset': {
-              borderColor: '#gray',
+              borderColor: '#6c7d9f',
             },
             '&:hover fieldset': {
-              borderColor: '#888',
+              borderColor: '#6c7d9f',
+            },
+            '&.Mui-focused fieldset': {
+        borderColor: '#6c7d9f',
             },
           },
         }}

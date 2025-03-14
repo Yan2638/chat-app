@@ -4,6 +4,7 @@ import { Chat as ChatIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router';
 import './list.css';
+import {API_URL} from '../../constants'
 
 const ChatList = () => {
   const [search, setSearch] = useState('');
@@ -16,7 +17,7 @@ const ChatList = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('http://localhost:3000/auth-check', { credentials: 'include' });
+        const response = await fetch(`${API_URL}/auth-check`, { credentials: 'include' });
         if (!response.ok) throw new Error('Ошибка получения пользователя');
         const data = await response.json();
         setCurrentUserId(data.id);
@@ -28,7 +29,7 @@ const ChatList = () => {
 
     const fetchChats = async () => {
       try {
-        const response = await fetch('http://localhost:3000/chats', { method: 'GET', credentials: 'include' });
+        const response = await fetch(`${API_URL}/chats`, { method: 'GET', credentials: 'include' });
         if (!response.ok) throw new Error('Ошибка при получении чатов');
         const chats = await response.json();
         setChatsList(chats);
@@ -58,7 +59,7 @@ const ChatList = () => {
     if (existingChat) return setError('Чат уже существует');
 
     try {
-      const response = await fetch('http://localhost:3000/createChat', {
+      const response = await fetch(`${API_URL}/createChat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId2: parseInt(userId, 10) }),
@@ -91,12 +92,15 @@ const ChatList = () => {
           onChange={(e) => setSearch(e.target.value)}
           sx={{
             '& .MuiOutlinedInput-root': {
-              borderRadius: '16px',
+              borderRadius: 2,
               height: '40px',
-              '& fieldset': { borderWidth: '2px', borderColor: '#gray' },
+              '& fieldset': { borderWidth: '2px', borderColor: '#6c7d9f' },
               '&:hover fieldset': {
-                borderColor: '#888',
+                borderColor: '#6c7d9f',
               },
+              '&.Mui-focused fieldset': {
+        borderColor: '#6c7d9f',
+            },
             },
           }}
           slotProps={{

@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import ChatInput from './ChatInput.jsx';
 import Header from './Header.jsx';
 import './chat.css';
+import {API_URL} from '../../constants'
 
 const Chat = () => {
   const { chatId } = useParams();
@@ -12,9 +13,9 @@ const Chat = () => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3000', { withCredentials: true });
+    const newSocket = io(API_URL, { withCredentials: true });
 
-    fetch('http://localhost:3000/auth-check', { credentials: 'include' })
+    fetch(`${API_URL}/auth-check`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.user) {
@@ -38,7 +39,7 @@ const Chat = () => {
       }
     });
 
-    fetch(`http://localhost:3000/messages/${chatId}`, { credentials: 'include' })
+    fetch(`${API_URL}/messages/${chatId}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         setMessages(data);

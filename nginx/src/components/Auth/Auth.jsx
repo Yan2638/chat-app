@@ -3,6 +3,7 @@ import "./auth.css";
 import { Button, Box, Dialog, DialogTitle, DialogContent, Stack, TextField, FormControlLabel, IconButton, Checkbox, } from '@mui/material';
 import Close from "@mui/icons-material/Close";
 import axios from "axios";
+import {API_URL} from '../../constants'
 
 
 const Authentication = () => {
@@ -21,7 +22,6 @@ const Authentication = () => {
     const handleLoginChange = (e) => setLoginData({...loginData,[e.target.name]: e.target.value})
     const handleRegisterChange = (e) => setRegisterData({...registerData,[e.target.name]: e.target.value}) 
     
-    const API_URL = "http://localhost:3000"
     axios.defaults.withCredentials = true;
 
     const handleLogin = async () => {
