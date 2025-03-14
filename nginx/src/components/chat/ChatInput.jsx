@@ -37,7 +37,7 @@ const ChatInput = ({onSendMessage}) => {
           borderRadius: 2,
           '& .MuiOutlinedInput-root': {
             '& fieldset': {
-              borderColor: '#444',
+              borderColor: '#gray',
             },
             '&:hover fieldset': {
               borderColor: '#888',

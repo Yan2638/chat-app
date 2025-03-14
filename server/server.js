@@ -298,6 +298,23 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.post('/logout', async (req, res) => {
+  const token = req.cookies.auth_token;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Токен не найден' });
+  }
+
+  try {
+    res.clearCookie('auth_token');
+
+    res.json({ message: 'Выход выполнен успешно' });
+  } catch (err) {
+    console.error("Ошибка при выходе:", err);
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 
 app.post('/createChat', async (req, res) => {
   const token = req.cookies.auth_token;

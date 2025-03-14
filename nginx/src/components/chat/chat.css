@@ -16,24 +16,27 @@
   }
 
   .sendIcon {
-    text-shadow: -2px 0 #163A7B, 0 2px #163A7B, 2px 0 #163A7B, 0 -2px #163A7B; color: #1c499a;
+    text-shadow: -2px 0 #163A7B, 0 2px #163A7B, 2px 0 #163A7B, 0 -2px #163A7B; color: gray;
     font-size:30px;
     margin-left: auto;
     justify-content: center;
     cursor: pointer;
   }
+  .sendIcon:hover {
+    color: #163A7B;
+  }
   .emojiPicker {
-    color: #000;
+    color: gray;
     font-size: 30px;
     margin-left: auto;
   }
   .phoneIcon {
     margin-left: auto;
-    color: #000;
+    color: gray;
   }
 
   .logout {
-    color: #1c499a;
+    color: gray;
 
   }
   

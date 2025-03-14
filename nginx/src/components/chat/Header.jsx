@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import { Typography } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { useNavigate } from 'react-router';
 import "./chat.css";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
@@ -20,8 +21,12 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
+
+
 export default function Header() {
   const [name, setName] = useState("Гость");
+  const navigate = useNavigate ();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     axios.get("http://localhost:3000/auth-check", { withCredentials: true })
@@ -32,6 +37,25 @@ export default function Header() {
         setName("Гость");
       });
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.post("http://localhost:3000/logout", {}, { withCredentials: true });
+      if (response.status === 200) {
+        localStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_token');
+        
+        document.cookie = "auth_token=; Max-Age=0; path=/;";
+        
+        navigate("/chat-app/auth");
+      }
+    } catch (error) {
+      console.error("Ошибка при выходе:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box className="header">
@@ -48,8 +72,10 @@ export default function Header() {
             {name}
           </Typography>
         </Box>
+        <Box sx={{ display: 'flex', gap: '25px' }}>
         <PhoneIcon className='phoneIcon' fontSize="large" />
-        <LogoutIcon className="logout" fontSize="large" />
+        <LogoutIcon onClick={handleLogout} className="logout" fontSize="large" sx={{cursor: 'pointer'}} />
+        </Box>
       </Box>
     </Box>
   );

@@ -89,6 +89,16 @@ const ChatList = () => {
           placeholder="Поиск чатов"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '16px',
+              height: '40px',
+              '& fieldset': { borderWidth: '2px', borderColor: '#gray' },
+              '&:hover fieldset': {
+                borderColor: '#888',
+              },
+            },
+          }}
           slotProps={{
             input: {
             endAdornment: (
@@ -99,14 +109,6 @@ const ChatList = () => {
               </InputAdornment>
             ),
           }
-          }}
-          sx={{
-            borderRadius: 4,
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '16px',
-              height: '40px',
-              '& fieldset': { borderWidth: '2px' },
-            },
           }}
         />
       </Box>
@@ -121,7 +123,7 @@ const ChatList = () => {
               const userName = isSender ? chat.receiver_name : chat.sender_name;
 
               return (
-                <ListItem key={chat.id} alignItems="flex-start" button onClick={() => handleChatClick(chat.id)}>
+                <ListItem key={chat.id} alignItems="flex-start" onClick={() => handleChatClick(chat.id)}>
                   <ListItemAvatar>
                     <Avatar>
                       <ChatIcon />
@@ -157,7 +159,7 @@ const ChatList = () => {
             sx={{ mb: 2 }}
           />
           {error && <Alert severity="error">{error}</Alert>}
-          <Box sx={{ textAlign: 'right' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Button variant="outlined" onClick={() => setOpenModal(false)}>Отмена</Button>
             <Button variant="contained" color="primary" onClick={handleCreateChat}>Создать</Button>
           </Box>
