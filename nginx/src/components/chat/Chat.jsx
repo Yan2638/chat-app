@@ -11,6 +11,7 @@ const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [userId, setUserId] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [pendingMessages, setPendingMessages] = useState([]);
 
   useEffect(() => {
     const newSocket = io(API_URL, { withCredentials: true });
@@ -35,14 +36,14 @@ const Chat = () => {
     if (!socket) return;
 
     const handleReceiveMessage = (msg) => {
+      console.log('Received message from server:', msg);
+
       if (String(msg.chat_id) === String(chatId)) {
         setMessages(prevMessages => {
-          const messagesSet = new Set(prevMessages.map(m => m.id));
-          if (messagesSet.has(msg.id)) {
-            return prevMessages;
-          }
-          return [...prevMessages, msg];
+          const updatedMessages = prevMessages.filter(m => m.id !== msg.id);
+          return [...updatedMessages, msg]; 
         });
+        setPendingMessages(prevPending => prevPending.filter(m => m.id !== msg.id));
       }
     };
 
@@ -56,7 +57,10 @@ const Chat = () => {
   useEffect(() => {
     fetch(`${API_URL}/messages/${chatId}`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => setMessages(data))
+      .then(data => {
+        console.log('Loaded messages from server:', data);
+        setMessages(data);
+      })
       .catch(error => console.error('Ошибка при загрузке сообщений:', error));
   }, [chatId]);
 
@@ -69,8 +73,11 @@ const Chat = () => {
     console.log('Отправка сообщения:', { chatId, senderId: userId, text: message });
 
     const receiverId = userId === 5 ? 3 : 5;
+
+    const tempId = `local-${Date.now()}`;
+
     const newMessage = {
-      id: Date.now(),
+      id: tempId,
       text: message,
       sender_id: userId,
       receiver_id: receiverId,
@@ -79,13 +86,7 @@ const Chat = () => {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prevMessages => {
-      const messagesSet = new Set(prevMessages.map(m => m.id));
-      if (messagesSet.has(newMessage.id)) {
-        return prevMessages;
-      }
-      return [...prevMessages, newMessage];
-    });
+    setPendingMessages(prevMessages => [...prevMessages, newMessage]);
 
     socket.emit('sendMessage', { senderId: userId, chatId, text: message });
   };
