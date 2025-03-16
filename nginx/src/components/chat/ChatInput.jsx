@@ -1,14 +1,28 @@
-import { useState } from 'react';
-import { TextField, Box, IconButton } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
+import { TextField, Box, IconButton, Popper } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import EmojiPicker from 'emoji-picker-react';
 import { EmojiEmotions } from '@mui/icons-material';
 import './chat.css';
 import PropTypes from 'prop-types';
 
-const ChatInput = ({onSendMessage}) => {
+const ChatInput = ({ onSendMessage }) => {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const emojiPickerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleSendMessage = () => {
     if (text.trim()) {
@@ -16,20 +30,29 @@ const ChatInput = ({onSendMessage}) => {
       setText('');
     }
   };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   const handleEmoji = (e) => {
-      setText((prev) => prev +e.emoji);
-      setOpen(false);
+    setText((prev) => prev + e.emoji);
+    setOpen(false);
   };
 
   return (
     <Box className="chat-input">
-      <IconButton onClick={() => setOpen((prev) => !prev)}>
-        <EmojiEmotions className='emojiPicker'/>
+      <IconButton onClick={() => setOpen((prev) => !prev)} aria-label="Выбрать эмодзи">
+        <EmojiEmotions className="emojiPicker" />
       </IconButton>
       <TextField
-        className='chatInput'
+        className="chatInput"
         value={text}
         onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
         variant="outlined"
         placeholder="Введите сообщение..."
         fullWidth
@@ -43,19 +66,21 @@ const ChatInput = ({onSendMessage}) => {
               borderColor: '#6c7d9f',
             },
             '&.Mui-focused fieldset': {
-        borderColor: '#6c7d9f',
+              borderColor: '#6c7d9f',
             },
           },
         }}
       />
-      <IconButton onClick={handleSendMessage} color="primary" disabled={!text.trim()}>
-        <SendIcon className='sendIcon'/>
+      <IconButton onClick={handleSendMessage} color="primary" disabled={!text.trim()} aria-label="Отправить сообщение">
+        <SendIcon className="sendIcon" />
       </IconButton>
       {open && (
-        <Box sx={{ position: 'absolute', bottom: 60, right: 20 }}>
-          <EmojiPicker open={open} onEmojiClick={handleEmoji} />
-        </Box>
-      )}  
+        <Popper open={open} anchorEl={emojiPickerRef.current} placement="top-end">
+          <Box ref={emojiPickerRef}>
+            <EmojiPicker open={open} onEmojiClick={handleEmoji} />
+          </Box>
+        </Popper>
+      )}
     </Box>
   );
 };

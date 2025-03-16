@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import ChatInput from './ChatInput.jsx';
 import Header from './Header.jsx';
 import './chat.css';
-import {API_URL} from '../../constants'
+import { API_URL } from '../../constants';
 
 const Chat = () => {
   const { chatId } = useParams();
@@ -14,6 +14,7 @@ const Chat = () => {
 
   useEffect(() => {
     const newSocket = io(API_URL, { withCredentials: true });
+    setSocket(newSocket);
 
     fetch(`${API_URL}/auth-check`, { credentials: 'include' })
       .then(res => res.json())
@@ -25,58 +26,68 @@ const Chat = () => {
       })
       .catch(error => console.error('Ошибка авторизации:', error));
 
-    newSocket.on('receiveMessage', (msg) => {
-      console.log("Получено сообщение:", msg);
-      console.log("chatId из URL:", chatId);
-      console.log("chat_id из сообщения:", msg.chat_id);
-    
-      if (msg.chat_id === chatId) {
-        setMessages(prevMessages => {
-          const updatedMessages = [...prevMessages, msg];
-          console.log("Обновленные сообщения:", updatedMessages);
-          return updatedMessages;
-        });
-      }
-    });
-
-    fetch(`${API_URL}/messages/${chatId}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => {
-        setMessages(data);
-      })
-      .catch(error => console.error('Ошибка при загрузке сообщений:', error));
-
-    setSocket(newSocket);
-
     return () => {
-      newSocket.off('receiveMessage');
       newSocket.disconnect();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReceiveMessage = (msg) => {
+      if (String(msg.chat_id) === String(chatId)) {
+        setMessages(prevMessages => {
+          const messagesSet = new Set(prevMessages.map(m => m.id));
+          if (messagesSet.has(msg.id)) {
+            return prevMessages;
+          }
+          return [...prevMessages, msg];
+        });
+      }
+    };
+
+    socket.on('receiveMessage', handleReceiveMessage);
+
+    return () => {
+      socket.off('receiveMessage', handleReceiveMessage);
+    };
+  }, [socket, chatId]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/messages/${chatId}`, { credentials: 'include' })
+      .then(res => res.json())
+      .then(data => setMessages(data))
+      .catch(error => console.error('Ошибка при загрузке сообщений:', error));
   }, [chatId]);
 
   const handleSendMessage = (message) => {
-    if (message.trim()) {
-      if (!userId || !chatId) {
-        console.error('Ошибка: ID пользователя или chatId не найден');
-        return;
-      }
-      console.log('Отправка сообщения:', { chatId, senderId: userId, text: message });
-
-      const receiverId = userId === 5 ? 3 : 5;
-
-      socket.emit('sendMessage', { senderId: userId, chatId, text: message });
-
-      const newMessage = {
-        id: Date.now(),
-        text: message,
-        sender_id: userId,
-        receiver_id: receiverId,
-        chat_id: chatId,
-        sender_name: 'You',
-        timestamp: new Date().toISOString(),
-      };
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+    if (!message.trim() || !userId || !chatId || !socket) {
+      console.error('Ошибка: ID пользователя, chatId или сокет не найден');
+      return;
     }
+
+    console.log('Отправка сообщения:', { chatId, senderId: userId, text: message });
+
+    const receiverId = userId === 5 ? 3 : 5;
+    const newMessage = {
+      id: Date.now(),
+      text: message,
+      sender_id: userId,
+      receiver_id: receiverId,
+      chat_id: chatId,
+      sender_name: 'You',
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages(prevMessages => {
+      const messagesSet = new Set(prevMessages.map(m => m.id));
+      if (messagesSet.has(newMessage.id)) {
+        return prevMessages;
+      }
+      return [...prevMessages, newMessage];
+    });
+
+    socket.emit('sendMessage', { senderId: userId, chatId, text: message });
   };
 
   useEffect(() => {
