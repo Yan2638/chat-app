@@ -31,7 +31,6 @@ const ChatList = () => {
         console.error('Ошибка получения пользователя:', error);
       }
     };
-    
 
     const fetchChats = async () => {
       try {
@@ -49,7 +48,11 @@ const ChatList = () => {
     fetchChats();
   }, []);
 
-  const filteredChats = chatsList.filter(chat => chat.sender_id === currentUserId || chat.receiver_id === currentUserId);
+  const filteredChats = chatsList.filter(chat => {
+    const isUserChat = chat.sender_id === currentUserId || chat.receiver_id === currentUserId;
+    const isMatchingSearch = !search || chat.id.toString().includes(search);
+    return isUserChat && isMatchingSearch;
+  });
 
   const navigate = useNavigate();
   const handleChatClick = (chatId) => navigate(`/chat-app/chat/${chatId}`);
@@ -93,7 +96,7 @@ const ChatList = () => {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Поиск чатов"
+          placeholder="Поиск чатов по ID"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{
