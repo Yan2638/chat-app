@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, Box, Modal, Button, Alert, IconButton, InputAdornment } from '@mui/material';
+import { List as MuiList, ListItem, ListItemAvatar, Avatar, ListItemText, Typography, Divider, TextField, Box, Modal, Button, Alert, IconButton, InputAdornment, Drawer } from '@mui/material';
 import { Chat as ChatIcon } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate } from 'react-router';
 import './list.css';
-import {API_URL} from '../../constants'
+import { API_URL } from '../../constants';
 
 const ChatList = () => {
   const [search, setSearch] = useState('');
@@ -13,6 +14,8 @@ const ChatList = () => {
   const [error, setError] = useState(null);
   const [chatsList, setChatsList] = useState([]);
   const [currentUserId, setCurrentUserId] = useState('');
+  const [currentUserName, setCurrentUserName] = useState('');
+  const [openMenu, setOpenMenu] = useState(false);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -20,12 +23,15 @@ const ChatList = () => {
         const response = await fetch(`${API_URL}/auth-check`, { credentials: 'include' });
         if (!response.ok) throw new Error('Ошибка получения пользователя');
         const data = await response.json();
+        console.log(data);
         setCurrentUserId(data.id);
+        setCurrentUserName(data.user.Name || "Гость");      
       } catch (error) {
         setError(error.message);
         console.error('Ошибка получения пользователя:', error);
       }
     };
+    
 
     const fetchChats = async () => {
       try {
@@ -99,20 +105,21 @@ const ChatList = () => {
                 borderColor: '#6c7d9f',
               },
               '&.Mui-focused fieldset': {
-        borderColor: '#6c7d9f',
-            },
+                borderColor: '#6c7d9f',
+              },
             },
           }}
           slotProps={{
             input: {
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setOpenModal(true)}>
-                  <AddIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }
+              endAdornment: (
+                <InputAdornment position="end">
+                  <MenuIcon onClick={() => setOpenMenu(true)} />
+                  <IconButton onClick={() => setOpenModal(true)}>
+                    <AddIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
           }}
         />
       </Box>
@@ -138,7 +145,7 @@ const ChatList = () => {
                     secondary={
                       <>
                         <Typography component="span" variant="body2" color="text.primary">
-                          {chat.lastMessage || 'Нет сообщений'}
+                          {chat.messages || 'Нет сообщений'}
                         </Typography>
                         {chat.timestamp ? ` — ${chat.timestamp}` : ''}
                       </>
@@ -169,6 +176,23 @@ const ChatList = () => {
           </Box>
         </Box>
       </Modal>
+
+      <Drawer
+        anchor="left"
+        open={openMenu}
+        onClose={() => setOpenMenu(false)}
+        sx={{ width: 250 }}
+      >
+        <Box sx={{ width: 270, padding: 2 }}>
+          <Avatar sx={{ width: 56, height: 56, marginBottom: 2 }} />
+          <Typography variant="h6">{currentUserName || 'Пользователь'}</Typography>
+          <Button fullWidth sx={{ marginBottom: 2 }}>Профиль</Button>
+          <Button fullWidth sx={{ marginBottom: 2 }}>Создать группу</Button>
+          <Button fullWidth sx={{ marginBottom: 2 }}>Настройки</Button>
+          <Button fullWidth sx={{ marginBottom: 2 }}>Ночной режим</Button>
+          <Button fullWidth>Выход</Button>
+        </Box>
+      </Drawer>
     </div>
   );
 };

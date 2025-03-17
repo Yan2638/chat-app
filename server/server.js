@@ -406,7 +406,10 @@ app.get('/chats', async (req, res) => {
   }
 
   try {
-    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
+    const userResult = await client.query(
+      'SELECT id FROM "users" WHERE auth_token = $1', 
+      [token]
+    );
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({ message: 'Неверный токен' });
@@ -415,18 +418,22 @@ app.get('/chats', async (req, res) => {
     const userId = userResult.rows[0].id;
 
     const result = await client.query(
-      `SELECT c.id, c.name, u1."Name" AS sender_name, u2."Name" AS receiver_name
+      `SELECT c.id, c.name, 
+              u1."Name" AS sender_name, 
+              u2."Name" AS receiver_name,
+              (SELECT text FROM "messages" m WHERE m.chat_id = c.id ORDER BY m.timestamp DESC LIMIT 1) AS last_message,
+              (SELECT timestamp FROM "messages" m WHERE m.chat_id = c.id ORDER BY m.timestamp DESC LIMIT 1) AS last_message_time
        FROM "chats" c
        JOIN "users" u1 ON c.sender_id = u1.id
        JOIN "users" u2 ON c.receiver_id = u2.id
        WHERE c.sender_id = $1 OR c.receiver_id = $1
-       ORDER BY c.created_at DESC`,
+       ORDER BY last_message_time DESC NULLS LAST`,
       [userId]
     );
 
     console.log('Чаты для пользователя:', result.rows);
 
-    res.status(200).json(result.rows); 
+    res.status(200).json(result.rows);
   } catch (error) {
     console.error('Ошибка при получении чатов:', error);
     res.status(500).json({ message: 'Ошибка при получении чатов' });

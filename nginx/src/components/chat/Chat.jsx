@@ -44,6 +44,7 @@ const Chat = () => {
           return [...updatedMessages, msg]; 
         });
         setPendingMessages(prevPending => prevPending.filter(m => m.id !== msg.id));
+        console.log('Сообщение отправлено', pendingMessages);
       }
     };
 
@@ -58,7 +59,6 @@ const Chat = () => {
     fetch(`${API_URL}/messages/${chatId}`, { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
-        console.log('Loaded messages from server:', data);
         setMessages(data);
       })
       .catch(error => console.error('Ошибка при загрузке сообщений:', error));
@@ -109,7 +109,7 @@ const Chat = () => {
             </div>
           ))
         ) : (
-          <div>Нет сообщений</div>
+          <div>Чат пуст</div>
         )}
       </div>
       <ChatInput onSendMessage={handleSendMessage} />
