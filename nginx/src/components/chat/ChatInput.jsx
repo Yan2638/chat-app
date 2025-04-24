@@ -54,7 +54,8 @@ const ChatInput = ({ onSendMessage }) => {
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         variant="outlined"
-        placeholder="Введите сообщение..."
+        label="Введите сообщение..."
+        size='small'
         fullWidth
         sx={{
           borderRadius: 2,
@@ -66,10 +67,17 @@ const ChatInput = ({ onSendMessage }) => {
               borderColor: '#6c7d9f',
             },
             '&.Mui-focused fieldset': {
-              borderColor: '#6c7d9f',
+              borderColor: '#1976d2', // цвет рамки при фокусе как в AIChat
             },
           },
+          '& .MuiInputLabel-root': {
+            color: '#6c7d9f', // цвет метки в обычном состоянии
+          },
+          '& .MuiInputLabel-root.Mui-focused': {
+            color: '#1976d2', // цвет метки при фокусе
+          },
         }}
+        
       />
       <IconButton onClick={handleSendMessage} color="primary" disabled={!text.trim()} aria-label="Отправить сообщение">
         <SendIcon className="sendIcon" />

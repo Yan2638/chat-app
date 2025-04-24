@@ -48,8 +48,7 @@ const Chat = () => {
       }
     };
 
-    socket.on('receiveMessage', handleReceiveMessage);
-
+    socket.on('receiveMessage', handleReceiveMessage);    
     return () => {
       socket.off('receiveMessage', handleReceiveMessage);
     };

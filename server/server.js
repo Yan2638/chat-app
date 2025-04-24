@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const { Client } = require('pg');
 const cors = require('cors');
+const axios = require('axios');
 const cookieParser = require('cookie-parser');
 const http = require('http');
 const socketIo = require('socket.io');
@@ -44,6 +45,49 @@ const io = socketIo(server, {
 
 const users = new Map();
 
+const getCryptoPrice = async (symbol) => {
+  try {
+    const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest', {
+      headers: { 'X-CMC_PRO_API_KEY': '63a49295-19eb-4303-8346-fc98be480e62' },
+      params: { symbol, convert: 'USD' }
+    });
+
+    return response.data.data[symbol].quote.USD.price;
+  } catch (error) {
+    console.error('Ошибка при получении курса криптовалюты:', error);
+    return null;
+  }
+};
+
+const askAI = async (customPrompt) => {
+  const response = await fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gemma:2b',
+      prompt: customPrompt,
+      stream: false,
+    }),
+  });
+
+  const data = await response.json();
+  return data.response;
+};
+
+const buildPrompt = (history, newMessage) => {
+  const formatted = history
+    .map(msg => `${msg.sender === 'user' ? 'Пользователь' : 'Ассистент'}: ${msg.text}`)
+    .join('\n');
+
+  return `
+Ты — дружелюбный ассистент. Отвечай ясно и по делу.
+${formatted}
+Пользователь: ${newMessage}
+Ассистент:
+  `;
+};
+
+
 io.on('connection', (socket) => {
   console.log('Новый клиент подключился:', socket.id);
 
@@ -77,6 +121,23 @@ io.on('connection', (socket) => {
     }
   };
   
+  app.get('/crypto-price/:symbol', async (req, res) => {
+    const { symbol } = req.params;
+  
+    try {
+      const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest', {
+        headers: { 'X-CMC_PRO_API_KEY': '63a49295-19eb-4303-8346-fc98be480e62' },
+        params: { symbol: symbol.toUpperCase(), convert: 'USD' }
+      });
+  
+      const price = response.data.data[symbol.toUpperCase()].quote.USD.price;
+      res.json({ price });
+    } catch (error) {
+      console.error('Ошибка при получении курса криптовалюты:', error);
+      res.status(500).json({ error: 'Ошибка получения курса криптовалюты' });
+    }
+  });
+
   socket.on('sendMessage', async ({ senderId, chatId, text }) => {
     console.log('Полученные данные:', { senderId, chatId, text });
   
@@ -191,40 +252,6 @@ app.get('/messages/:chatId', async (req, res) => {
     res.status(500).json({ message: "Ошибка при загрузке сообщений" });
   }
 });
-
-
-app.post('/messages', async (req, res) => {
-  const { text, chatId, senderId } = req.body;
-  const token = req.cookies.auth_token;
-
-  if (!token) {
-    return res.status(401).json({ message: 'Пользователь не авторизован' });
-  }
-
-  try {
-    const userResult = await client.query('SELECT id FROM "users" WHERE auth_token = $1', [token]);
-
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ message: 'Неверный токен' });
-    }
-
-    const userId = userResult.rows[0].id;
-
-    const result = await client.query(
-      `INSERT INTO "messages" (sender_id, chat_id, text) 
-       VALUES ($1, $2, $3) RETURNING id`,
-      [senderId, chatId, text]
-    );
-
-    res.status(201).json({ message: 'Сообщение успешно отправлено', messageId: result.rows[0].id });
-  } catch (error) {
-    console.error("Ошибка при отправке сообщения:", error);
-    res.status(500).json({ message: "Ошибка при отправке сообщения" });
-  }
-});
-
-
-
 
 app.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
@@ -440,6 +467,22 @@ app.get('/chats', async (req, res) => {
   }
 });
 
+app.post('/api/ai', async (req, res) => {
+  const { history, newMessage } = req.body;
+
+  if (!newMessage) {
+    return res.status(400).json({ error: 'Сообщение отсутствует' });
+  }
+
+  try {
+    const prompt = buildPrompt(history || [], newMessage);
+    const reply = await askAI(prompt);
+    res.json({ reply });
+  } catch (err) {
+    console.error('Ошибка общения с AI:', err);
+    res.status(500).json({ error: 'Ошибка AI' });
+  }
+});
 
 
 app.get('/auth-check', async (req, res) => {

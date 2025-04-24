@@ -10,6 +10,8 @@ import ClimbingBoxLoader from "react-spinners/ClimbingBoxLoader";
 import "./index.css";
 import ChatInput from "./components/chat/ChatInput.jsx";
 import {API_URL} from './constants'
+import AIChatPage from './components/list/AIChat.jsx';
+
 
 
 const App = () => {
@@ -70,7 +72,6 @@ const App = () => {
         <>
           <List />
           <Header />
-          <ChatInput />
           <Chat />
         </>
       ) : (
@@ -87,6 +88,20 @@ const App = () => {
           <Header />
           <ChatInput />
           <Chat />
+        </>
+      ) : (
+        <Navigate to="/chat-app/" replace />
+      ),
+    },
+    {
+      path: "/chat-app/ai",
+      element: loading ? (
+        <ClimbingBoxLoader className="loader" color="#1976d2" width="100%" />
+      ) : user ? (
+        <>
+          <List />
+          <Header />
+          <AIChatPage />
         </>
       ) : (
         <Navigate to="/chat-app/" replace />
