@@ -77,11 +77,11 @@
   }
   
   .chat-me {
-    padding: 8px;
+    padding: 4px;
     margin: 5px 0;
     align-self: flex-start;
-    background-color: #00ff00;
-    color: #000;
+    background-color: #0073ff;
+    color: #fff;
     border-radius: 5px;
     text-align: right;
   }
@@ -90,8 +90,8 @@
     padding: 8px;
     margin: 5px 0;
     align-self: flex-end;
-    background-color: gray;
-    color: white;
+    background-color: #bcd1ee;
+    color: #000000;
     border-radius: 5px;
     text-align: left;
   }

@@ -63,7 +63,7 @@ const Menu = ({ open, setOpen, currentUserName, currentUserEmail }) => {
     }
   
     try {
-      const response = await axios.get(`${API_URL}/crypto-price/${cryptoSymbol.toUpperCase()}`);
+      const response = await axios.get(`${API_URL}/api/crypto/${cryptoSymbol.toUpperCase()}`);
       const price = response.data.price;
   
       setCryptoAlert({

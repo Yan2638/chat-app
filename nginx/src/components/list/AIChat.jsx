@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { Button, Typography, TextField } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { API_URL } from '../../constants'; // путь к твоему API_URL
+import { API_URL } from '../../constants';
 
 
 const AIChat = () => {
@@ -52,21 +52,6 @@ const AIChat = () => {
         text: input,
         chatId: 'ai-chat', // это можно изменить в зависимости от того, как устроены чаты
       });
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/ai`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newMessage: input }),
-      });
-      const data = await response.json();
-      const botMessage = { sender: 'bot', text: data.reply };
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Ошибка при общении с AI:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
